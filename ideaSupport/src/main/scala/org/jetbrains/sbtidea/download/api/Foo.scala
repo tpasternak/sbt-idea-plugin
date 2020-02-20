@@ -17,38 +17,27 @@ trait ResolvedArtifact {
 
   protected def usedInstaller: Installer[R]
 
-  def isInstalled: Boolean   = usedInstaller.isInstalled(this)
-  def install(): Unit        = usedInstaller.downloadAndInstall(this)
+  def isInstalled(implicit ctx: InstallContext): Boolean   = usedInstaller.isInstalled(this)
+  def install(implicit ctx: InstallContext): Unit          = usedInstaller.downloadAndInstall(this)
 }
 
 trait Resolver[U <: UnresolvedArtifact] {
-  def resolve(art: U): Seq[art.R]
+  def resolve(dep: U): Seq[dep.R]
 }
 
 trait Installer[R <: ResolvedArtifact] {
-  def isInstalled(art: R): Boolean
-  def downloadAndInstall(art: R): Unit
+  def isInstalled(art: R)(implicit ctx: InstallContext): Boolean
+  def downloadAndInstall(art: R)(implicit ctx: InstallContext): Unit
 }
+
+case class InstallContext(baseDirectory: Path)
+
+// ================
 
 trait BaseDirectoryAware {
   def baseDirectory: Path
 }
 
-abstract class UrlBasedArtifact extends ResolvedArtifact with BaseDirectoryAware {
-  override type R = UrlBasedArtifact
-  override protected def usedInstaller: UrlInstaller.type = UrlInstaller
-  def url: URL
-}
-
-object UrlInstaller extends Installer[UrlBasedArtifact] {
-  override def isInstalled(art: UrlBasedArtifact): Boolean = ???
-  override def downloadAndInstall(art: UrlBasedArtifact): Unit = ???
-
-  private def download(art: UrlBasedArtifact) = ???
-}
-
-case class FooArtifact(override val url: URL, override val baseDirectory: Path) extends UrlBasedArtifact
-
-object Foo {
-//  FooArtifact(???).install()
+trait UrlBasedArtifact {
+  def dlUrl: URL
 }

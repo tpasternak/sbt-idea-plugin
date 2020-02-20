@@ -6,13 +6,13 @@ import java.util
 import java.util.function.Consumer
 
 import org.jetbrains.sbtidea.Keys.IntellijPlugin
-import org.jetbrains.sbtidea.PluginLogger
+import org.jetbrains.sbtidea.{PluginLogger => log}
 import org.jetbrains.sbtidea.download.api.PluginMetadata
 import org.jetbrains.sbtidea.packaging.artifact.using
 
 import scala.xml.XML
 
-class LocalPluginRegistry(ideaRoot: Path, log: PluginLogger) {
+class LocalPluginRegistry(ideaRoot: Path) {
   import LocalPluginRegistry._
 
   type PluginIndex = util.HashMap[String, String]
