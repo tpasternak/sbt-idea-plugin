@@ -49,17 +49,17 @@ trait Init { this: Keys.type =>
     intellijTestSystemDir     := intellijPluginDirectory.value / "test-system",
     concurrentRestrictions in Global += Tags.limit(Tags.Test, 1), // IDEA tests can't be run in parallel
     updateIntellij := {
-      val logger = new SbtPluginLogger(streams.value)
-      new CommunityIdeaUpdater(intellijBaseDirectory.value.toPath, logger)
-        .updateIdeaAndPlugins(
-          BuildInfo(
-            intellijBuild.value,
-            intellijPlatform.value,
-            jbrVersion.value
-          ),
-          intellijExternalPlugins.?.all(ScopeFilter(inAnyProject)).value.flatten.flatten,
-          intellijDownloadSources.value
-        )
+      PluginLogger.bind(new SbtPluginLogger(streams.value))
+      new CommunityUpdater(
+        intellijBaseDirectory.value.toPath,
+        BuildInfo(
+          intellijBuild.value,
+          intellijPlatform.value,
+          jbrVersion.value
+        ),
+        intellijExternalPlugins.?.all(ScopeFilter(inAnyProject)).value.flatten.flatten,
+        intellijDownloadSources.value
+      )
     },
     cleanUpTestEnvironment := {
       IO.delete(intellijTestSystemDir.value)
@@ -88,7 +88,7 @@ trait Init { this: Keys.type =>
     packageArtifactZipFile := target.value / s"${intellijPluginName.value}-${version.value}.zip",
     patchPluginXml := pluginXmlOptions.DISABLED,
     packageArtifact := {
-      implicit val logger: SbtPluginLogger = new SbtPluginLogger(streams.value)
+      PluginLogger.bind(new SbtPluginLogger(streams.value))
       val options = patchPluginXml.value
       val productDirs = productDirectories.in(Compile).value
       if (options != pluginXmlOptions.DISABLED) {
@@ -98,7 +98,7 @@ trait Init { this: Keys.type =>
       packageArtifact.value
     },
     packageArtifactDynamic := {
-      implicit val logger: SbtPluginLogger = new SbtPluginLogger(streams.value)
+      PluginLogger.bind(new SbtPluginLogger(streams.value))
       val options = patchPluginXml.value
       val productDirs = productDirectories.in(Compile).value
       if (options != pluginXmlOptions.DISABLED) {
@@ -153,7 +153,7 @@ trait Init { this: Keys.type =>
 
     runIDE := {
       import complete.DefaultParsers._
-      implicit val log: PluginLogger = new SbtPluginLogger(streams.value)
+      PluginLogger.bind(new SbtPluginLogger(streams.value))
       val opts = spaceDelimited("[noPCE] [noDebug] [suspend] [blocking]").parsed
       val vmOptions = intellijVMOptions.value.copy(
         noPCE = opts.contains("noPCE"),

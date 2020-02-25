@@ -7,8 +7,7 @@ import org.jetbrains.sbtidea.download.BuildInfo
 import org.jetbrains.sbtidea.download.api._
 
 
-case class PluginDependency(plugin: IntellijPlugin, baseDirectory: Path, buildInfo: BuildInfo)
-  extends UnresolvedArtifact with BaseDirectoryAware {
+case class PluginDependency(plugin: IntellijPlugin, buildInfo: BuildInfo) extends UnresolvedArtifact {
   override type U = PluginDependency
   override type R = PluginArtifact
   override protected def usedResolver: PluginResolver.type = PluginResolver

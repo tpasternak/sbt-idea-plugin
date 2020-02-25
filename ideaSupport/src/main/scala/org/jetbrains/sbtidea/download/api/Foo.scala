@@ -3,6 +3,8 @@ package org.jetbrains.sbtidea.download.api
 import java.net.URL
 import java.nio.file.Path
 
+import org.jetbrains.sbtidea.download.FileDownloader
+
 trait UnresolvedArtifact {
   type U >: this.type <: UnresolvedArtifact
   type R <: ResolvedArtifact
@@ -18,7 +20,7 @@ trait ResolvedArtifact {
   protected def usedInstaller: Installer[R]
 
   def isInstalled(implicit ctx: InstallContext): Boolean   = usedInstaller.isInstalled(this)
-  def install(implicit ctx: InstallContext): Unit          = usedInstaller.downloadAndInstall(this)
+  def install    (implicit ctx: InstallContext): Unit      = usedInstaller.downloadAndInstall(this)
 }
 
 trait Resolver[U <: UnresolvedArtifact] {
@@ -29,8 +31,6 @@ trait Installer[R <: ResolvedArtifact] {
   def isInstalled(art: R)(implicit ctx: InstallContext): Boolean
   def downloadAndInstall(art: R)(implicit ctx: InstallContext): Unit
 }
-
-case class InstallContext(baseDirectory: Path)
 
 // ================
 

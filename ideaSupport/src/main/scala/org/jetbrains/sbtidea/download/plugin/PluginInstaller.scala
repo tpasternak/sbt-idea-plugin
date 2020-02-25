@@ -1,30 +1,29 @@
 package org.jetbrains.sbtidea.download.plugin
 import java.nio.file.{Files, Path}
 
-import org.jetbrains.sbtidea.download.{BuildInfo, FileDownloader, LocalPluginRegistry, NioUtils, PluginRepoUtils, PluginXmlDetector, VersionComparatorUtil}
+import org.jetbrains.sbtidea.download.{BuildInfo, FileDownloader, IdeaUpdater, LocalPluginRegistry, NioUtils, PluginRepoUtils, PluginXmlDetector, VersionComparatorUtil}
 import org.jetbrains.sbtidea.download.LocalPluginRegistry.{extractInstalledPluginDescriptor, extractPluginMetaData}
 import org.jetbrains.sbtidea.download.api._
 import org.jetbrains.sbtidea.{PluginLogger => log}
 import org.jetbrains.sbtidea.Keys.IntellijPlugin
 
 
-class PluginInstaller(getInstallDir: Path, buildInfo: BuildInfo) extends Installer[PluginArtifact] {
+class PluginInstaller(buildInfo: BuildInfo) extends Installer[PluginArtifact] {
   import PluginInstaller._
 
-  private val localPluginRegistry = new LocalPluginRegistry(getInstallDir)
-  private val downloader          = new FileDownloader(getInstallDir.getParent)
-
   override def isInstalled(art: PluginArtifact)(implicit ctx: InstallContext): Boolean =
-    localPluginRegistry.isPluginInstalled(art.caller.plugin) && isInstalledPluginUpToDate(art.caller.plugin)
+    !IdeaUpdater.isDumbPlugins &&
+      LocalPluginRegistry.instanceFor(ctx.baseDirectory).isPluginInstalled(art.caller.plugin) &&
+      isInstalledPluginUpToDate(art.caller.plugin)
 
   override def downloadAndInstall(art: PluginArtifact)(implicit ctx: InstallContext): Unit = {
-    val dist = downloader.download(art.dlUrl)
+    val dist = FileDownloader(ctx.baseDirectory.getParent).download(art.dlUrl)
     installIdeaPlugin(art.caller.plugin, dist)
   }
 
-  def installIdeaPlugin(plugin: IntellijPlugin, artifact: Path): Path = {
+  def installIdeaPlugin(plugin: IntellijPlugin, artifact: Path)(implicit ctx: InstallContext): Path = {
     val installedPluginRoot = if (!isPluginJar(artifact)) {
-      val extractDir = Files.createTempDirectory(getInstallDir, s"${buildInfo.edition.name}-${buildInfo.buildNumber}-plugin")
+      val extractDir = Files.createTempDirectory(ctx.baseDirectory, s"${buildInfo.edition.name}-${buildInfo.buildNumber}-plugin")
       log.info(s"Extracting plugin '$plugin to $extractDir")
       sbt.IO.unzip(artifact.toFile, extractDir.toFile)
       assert(Files.list(extractDir).count() == 1, s"Expected only single plugin folder in extracted archive, got: ${extractDir.toFile.list().mkString}")
@@ -41,12 +40,12 @@ class PluginInstaller(getInstallDir: Path, buildInfo: BuildInfo) extends Install
       log.info(s"Installed plugin '$plugin to $targetJar")
       targetJar
     }
-    localPluginRegistry.markPluginInstalled(plugin, installedPluginRoot)
+    LocalPluginRegistry.instanceFor(ctx.baseDirectory).markPluginInstalled(plugin, installedPluginRoot)
     installedPluginRoot
   }
 
-  protected def isInstalledPluginUpToDate(plugin: IntellijPlugin): Boolean = {
-    val pluginRoot = localPluginRegistry.getInstalledPluginRoot(plugin)
+  protected def isInstalledPluginUpToDate(plugin: IntellijPlugin)(implicit ctx: InstallContext): Boolean = {
+    val pluginRoot = LocalPluginRegistry.instanceFor(ctx.baseDirectory).getInstalledPluginRoot(plugin)
     val descriptor = extractInstalledPluginDescriptor(pluginRoot)
     descriptor match {
       case Left(error) =>
@@ -100,7 +99,7 @@ class PluginInstaller(getInstallDir: Path, buildInfo: BuildInfo) extends Install
     detector.test(artifact)
   }
 
-  protected def pluginsDir: Path = getInstallDir.resolve("plugins")
+  protected def pluginsDir(implicit ctx: InstallContext): Path = ctx.baseDirectory.resolve("plugins")
 }
 
 object PluginInstaller {

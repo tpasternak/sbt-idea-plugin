@@ -8,6 +8,7 @@ import org.jetbrains.sbtidea.Keys._
 import org.jetbrains.sbtidea.download.BuildInfo
 import org.jetbrains.sbtidea.download.IdeaUpdater.IJ_REPO_OVERRIDE
 import org.jetbrains.sbtidea.download.api.IdeaResolver
+import org.jetbrains.sbtidea.{PluginLogger => log}
 import sbt.{URL, url}
 
 class IJRepoIdeaResolver extends Resolver[IdeaDependency] {
@@ -17,7 +18,8 @@ class IJRepoIdeaResolver extends Resolver[IdeaDependency] {
     val ideaUrl           = getUrl(dep.buildInfo, ".zip")
     // sources are available only for Community Edition
     val srcJarUrl         = getUrl(dep.buildInfo.copy(edition = Keys.IntelliJPlatform.IdeaCommunity), "-sources.jar")
-    IdeaDist(dep, dep)
+    IdeaDist(dep, ideaUrl) ::
+    IdeaSources(dep, srcJarUrl) :: Nil
   }
 
   private val defaultBaseURL    = "https://www.jetbrains.com/intellij-repository"
@@ -29,16 +31,6 @@ class IJRepoIdeaResolver extends Resolver[IdeaDependency] {
     case IntelliJPlatform.PyCharmProfessional => "com/jetbrains/intellij/pycharm" -> "pycharmPY"
     case IntelliJPlatform.CLion               => "com/jetbrains/intellij/clion" -> "clion"
     case IntelliJPlatform.MPS                 => "com/jetbrains/mps" -> "mps"
-  }
-
-  override def resolveUrlForIdeaBuild(idea: BuildInfo): Seq[ArtifactPart] = {
-    val (build, edition)  = (idea.buildNumber, idea.edition.name)
-    val ideaUrl           = getUrl(idea, ".zip")
-    // sources are available only for Community Edition
-    val srcJarUrl         = getUrl(idea.copy(edition = Keys.IntelliJPlatform.IdeaCommunity), "-sources.jar")
-
-    ArtifactPart(ideaUrl, ArtifactKind.IDEA_DIST, s"$edition-$build.zip") ::
-      ArtifactPart(srcJarUrl, ArtifactKind.IDEA_SRC, s"$edition-$build-sources.jar", optional = true) :: Nil
   }
 
   //noinspection NoTailRecursionAnnotation

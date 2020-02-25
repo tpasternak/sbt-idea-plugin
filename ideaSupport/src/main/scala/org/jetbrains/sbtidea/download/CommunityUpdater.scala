@@ -1,11 +1,17 @@
 package org.jetbrains.sbtidea.download
 
-import org.jetbrains.sbtidea.download.api._
+import java.nio.file.Path
 
-class CommunityUpdater {
-  def dependencies: Seq[UnresolvedArtifact] = ???
-  val x: UnresolvedArtifact = ???
-  val c = x.resolve.foreach(a => a.install())
-//  x.usedInstaller.isInstalled(x)
-//  x.usedResolver.resolve(x)
+import org.jetbrains.sbtidea.download.api._
+import org.jetbrains.sbtidea.download.idea.{IdeaDependency, IdeaDist}
+import org.jetbrains.sbtidea.download.plugin.PluginDependency
+import org.jetbrains.sbtidea.Keys.IntellijPlugin
+
+class CommunityUpdater(baseDirectory: Path, ideaBuildInfo: BuildInfo, plugins: Seq[IntellijPlugin], withSources: Boolean = true) {
+  implicit val context: InstallContext = InstallContext(baseDirectory)
+
+  def dependencies: Seq[UnresolvedArtifact] =
+
+  def update(): Unit = {
+  }
 }
